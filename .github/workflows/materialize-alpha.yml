@@ -1,0 +1,51 @@
+name: Materializar Alpha
+
+on:
+  push:
+    branches:
+      - assets/alpha-theo-alastor
+    paths:
+      - models/alpha/.ready
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: assets/alpha-theo-alastor
+
+      - name: Reconstruir modelos y capturas
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p models/exports/theo/alpha models/exports/alastor/alpha
+          mkdir -p models/previews/theo/alpha models/previews/alastor/alpha
+
+          cat models/alpha/staging/theo_alpha.glb.xz.b64.part* | base64 -d > /tmp/theo_alpha.glb.xz
+          xz -dc /tmp/theo_alpha.glb.xz > models/exports/theo/alpha/theo_alpha.glb
+
+          cat models/alpha/staging/alastor_alpha.glb.xz.b64.part* | base64 -d > /tmp/alastor_alpha.glb.xz
+          xz -dc /tmp/alastor_alpha.glb.xz > models/exports/alastor/alpha/alastor_alpha.glb
+
+          cat models/alpha/staging/theo_alpha_4vistas.webp.b64.part* | base64 -d > models/previews/theo/alpha/theo_alpha_4vistas.webp
+          cat models/alpha/staging/alastor_alpha_4vistas.webp.b64.part* | base64 -d > models/previews/alastor/alpha/alastor_alpha_4vistas.webp
+
+          echo 'bede606e2567a5ebaf793f2a7acf4614efba438f3cde9d129be218594acff5c7  models/exports/theo/alpha/theo_alpha.glb' | sha256sum -c -
+          echo 'aff422bb653a3d9c610a1698aa47390a363c6019dbcfc57d871697f89363d9a9  models/exports/alastor/alpha/alastor_alpha.glb' | sha256sum -c -
+          echo '6defbad3c7c3309c27eae5c778c1778f92318d8e824b6da762f4cdeb1ec24e05  models/previews/theo/alpha/theo_alpha_4vistas.webp' | sha256sum -c -
+          echo '4a3cfeb2148d90ffa6cf3f7b7c461b372fd63b9f2138d62b2e12a4b01f9647bb  models/previews/alastor/alpha/alastor_alpha_4vistas.webp' | sha256sum -c -
+
+          rm -rf models/alpha/staging models/alpha/.ready
+
+      - name: Guardar binarios materializados
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add models
+          git commit -m 'Materializa modelos y capturas Alpha'
+          git push origin HEAD:assets/alpha-theo-alastor
